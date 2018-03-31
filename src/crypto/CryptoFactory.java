@@ -12,14 +12,14 @@ import javax.crypto.NoSuchPaddingException;
 
 public class CryptoFactory {
 	
-	// Pentru Caesar's Cipher----------------------------------------------------------------------
+   // Pentru Caesar's Cipher----------------------------------------------------------------------
 	
-	/**
-	 * Shiftare caracter
-	 * @param caracter
-	 * @param key
-	 * @return
-	 */
+   /**
+	* Shiftare caracter
+	* @param caracter
+	* @param key
+	* @return
+	*/
     public static char caesar(char caracter, int key) {
         // Constante
         final int alphaLength = 26;
@@ -52,7 +52,7 @@ public class CryptoFactory {
     
 	// Pentru RSA---------------------------------------------------------------------------------- 
 	
-	 /**
+	/**
      * Criptare RSA
      * @param publicKey
      * @return
