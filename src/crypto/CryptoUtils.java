@@ -44,5 +44,4 @@ public class CryptoUtils {
         return CryptoFactory.getRsaEncrypt(publicKey).doFinal(plainText);
     }
 
-
 }
