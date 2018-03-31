@@ -8,5 +8,4 @@ public class SecurityParams {
     public static final String RSA_KEY_TYPE = "RSA";
     public static final String RSA_SIGN = "SHA256withRSA";
 
-
 }
