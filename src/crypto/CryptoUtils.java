@@ -8,18 +8,17 @@ import javax.crypto.IllegalBlockSizeException;
 
 public class CryptoUtils {
 	
-	// Pentru Caesar's Cipher----------------------------------------------------------------------
-	
-	public static final String decryptCaesar(String s, int key) {
+    // Pentru Caesar's Cipher----------------------------------------------------------------------	
+    public static final String decryptCaesar(String s, int key) {
 		return CryptoFactory.caesarsCipher(s, -key);
-	}
+    }
 	
     public static final String encryptCaesar(String s, int key) {
 		return CryptoFactory.caesarsCipher(s, key);
-	}
+    }
 	
     // Pentru RSA----------------------------------------------------------------------------------
-	/**
+    /**
      * Decriptare cu algoritmul RSA
      * @param cipherText
      * @param privateKey
@@ -44,6 +43,5 @@ public class CryptoUtils {
             throws IllegalBlockSizeException, BadPaddingException {
         return CryptoFactory.getRsaEncrypt(publicKey).doFinal(plainText);
     }
-
 
 }
