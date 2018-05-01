@@ -29,6 +29,7 @@ import chatsocket.bo.ResourceManager;
 import chatsocket.utils.Task;
 import client.Client;
 import client.Client.OnDataReceivedListener;
+import crypto.CryptoUtils;
 
 import javax.swing.border.EmptyBorder;
 import javax.swing.ImageIcon;
@@ -109,9 +110,11 @@ public class ChatWindow extends Window implements ActionListener, WindowStateLis
 
 	private void performSending() {
 		String content = inputField.getText();
+		String encryptedContent = new String();
 		if (content != null && (content = content.trim()).length() > 0) {
+			encryptedContent = CryptoUtils.encryptCaesar(content, 5);
 			ChatMessage chatMessage = new ChatMessage();
-			chatMessage.setContent(content);
+			chatMessage.setContent(encryptedContent);
 			chatMessage.setWhoId(yourFriend.getAccountId());
 			final ChatRequest request = new ChatRequest(ChatRequest.CODE_CHAT_MESSAGE, chatMessage);
 			Task.run(new Runnable() {
@@ -168,7 +171,7 @@ public class ChatWindow extends Window implements ActionListener, WindowStateLis
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override
 			public void run() {
-				showFriendChat(chatMessage.getContent());
+				showFriendChat(CryptoUtils.decryptCaesar(chatMessage.getContent(), 5));
 			}
 		});
 	}

@@ -89,7 +89,7 @@ public class ConnectionWindow extends Window implements ActionListener {
 	}
 
 	public ConnectionWindow() {
-		setTitle("Welcome to Homechat");
+		setTitle("Welcome to Crytpochat");
 	}
 
 	@Override

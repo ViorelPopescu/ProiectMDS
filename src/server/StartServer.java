@@ -3,7 +3,7 @@ package server;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-import server.ui.Homechat;
+import server.ui.Cryptochat;
 
 public final class StartServer {
 	private static void setSystemLookAndFeel() {
@@ -16,6 +16,6 @@ public final class StartServer {
 
 	public static void main(String[] args) {
 		setSystemLookAndFeel();
-		new Homechat().setVisible(true);
+		new Cryptochat().setVisible(true);
 	}
 }

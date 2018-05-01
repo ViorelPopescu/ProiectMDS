@@ -33,7 +33,7 @@ import javax.swing.JTextPane;
 import java.awt.BorderLayout;
 import javax.swing.ScrollPaneConstants;
 
-public class Homechat extends JFrame implements ActionListener {
+public class Cryptochat extends JFrame implements ActionListener {
 	private static final long serialVersionUID = -5733936059449135139L;
 	private static final int MAX_CONNECTIONS = 100;
 	private JTextField addressField;
@@ -45,8 +45,8 @@ public class Homechat extends JFrame implements ActionListener {
 	private JButton btnBrowse;
 	private Server server = null;
 
-	public Homechat() {
-		setTitle("Homechat - Server");
+	public Cryptochat() {
+		setTitle("Cryptochat - Server");
 		setResizable(false);
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		getContentPane().setLayout(null);

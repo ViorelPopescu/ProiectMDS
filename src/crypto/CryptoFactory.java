@@ -20,6 +20,10 @@ public class CryptoFactory {
     * @return
     */
     public static char caesar(char caracter, int key) {
+    	
+    	if(caracter == 32) {
+    		return caracter;
+    	}
         // Constante
         final int alphaLength = 26;
         final char asciiShift = Character.isUpperCase(caracter) ? 'A' : 'a';
