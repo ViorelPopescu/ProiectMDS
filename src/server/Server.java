@@ -13,6 +13,7 @@ import chatsocket.bean.AccountInfo;
 import chatsocket.bean.ChatMessage;
 import chatsocket.bean.ChatRequest;
 import chatsocket.bean.ChatResult;
+import chatsocket.bean.KeyPacket;
 import chatsocket.bean.RegisterInfo;
 import chatsocket.utils.Log;
 import chatsocket.utils.Security;
@@ -173,11 +174,16 @@ public final class Server implements Closeable, OnAuthenticatedListener {
 							registerInfo.getDisplayName());
 				}
 				break;
+			case ChatRequest.CODE_KEY_EXCHANGE:
+				responseObject = forwardKeyExchange(sender,
+						request.getExtra() instanceof KeyPacket ? (KeyPacket) request.getExtra() : null);
+				break;
 			}
 			responseObject.setRequestCode(request.getCode());
 			return responseObject;
 		}
 
+		
 		private boolean isLogged(AccountInfo accountInfo) {
 			if (accountInfo == null)
 				return false;
@@ -245,6 +251,47 @@ public final class Server implements Closeable, OnAuthenticatedListener {
 			result.setCode(ChatResult.CODE_OK);
 			result.setExtra(allFriends);
 			return result;
+		}
+		
+		private ChatResult forwardKeyExchange(Worker sender, KeyPacket pack) {
+			if(pack == null) {
+				return null;
+			}
+			Log.l(String.format("Packet sent by %d: %d", sender.getAccount().getAccountId(), pack.getContent()));
+			
+			int whoReceiverId = pack.getWhoId();
+			Worker whoReceiver = null; 
+			
+			pack.setWhoId(sender.getAccount().getAccountId());
+			
+			synchronized (lock) {
+				for (Worker _receiver : workers) {
+					if (_receiver.getAccount().getAccountId() == whoReceiverId) {
+						whoReceiver = _receiver;
+						break;
+					}
+				}
+			}
+			
+			ChatResult result = new ChatResult();
+			result.setCode(ChatResult.CODE_FAIL);
+			if (whoReceiver != null) {
+				try {
+					ChatResult forwardResult = new ChatResult();
+					forwardResult.setCode(ChatResult.CODE_OK);
+					forwardResult.setRequestCode(ChatRequest.CODE_KEY_EXCHANGE);
+					forwardResult.setExtra(pack);
+					whoReceiver.response(forwardResult);
+					result.setCode(ChatResult.CODE_OK);
+				} catch (IOException e) {
+					// e.printStackTrace();
+					result.setExtra("Friend's connection broken down!");
+				}
+			} else {
+				result.setExtra("Friend was offline!");
+			}
+			return result;
+			
 		}
 
 		private ChatResult forwardChatMessage(Worker sender, ChatMessage chatMessage) {

@@ -5,6 +5,7 @@ public class SecurityParams {
 	// Caesar Cipher Diffie-Hellman
 	public static final int G = 8;
 	public static final int P = 3;
+	public static final int sKey = 5;
 	
     // RSA
     public static final int RSA_KEY_SIZE_BYTES = 512;

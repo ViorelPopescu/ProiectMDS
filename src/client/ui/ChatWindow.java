@@ -25,6 +25,7 @@ import chatsocket.bean.AccountInfo;
 import chatsocket.bean.ChatMessage;
 import chatsocket.bean.ChatRequest;
 import chatsocket.bean.ChatResult;
+import chatsocket.bean.KeyPacket;
 import chatsocket.bo.ResourceManager;
 import chatsocket.utils.Task;
 import client.Client;
@@ -50,7 +51,7 @@ public class ChatWindow extends Window implements ActionListener, WindowStateLis
 	private int privateKey;
 	private int sessionKey;
 	private boolean keySent;
-
+	private boolean debug = false;
 	@Override
 	protected void initializeComponents() {
 		JPanel panel = new JPanel();
@@ -86,14 +87,14 @@ public class ChatWindow extends Window implements ActionListener, WindowStateLis
 	public ChatWindow(AccountInfo yourFriend) {
 		privateKey = CryptoUtils.generateRandomKey();
 		keySent = false;
+		sessionKey = SecurityParams.sKey;
 		
 		setTitle(yourFriend.getDisplayName());
 
-		this.yourFriend = yourFriend;
-
-		diffieHellmanKeyExchangeSend();
+		this.yourFriend = yourFriend;		
 		
 		Client.getInstance().addOnDataReceivedListener(this);
+
 	}
 
 	private void appendRawHtmlChatContent(String html) {
@@ -117,19 +118,26 @@ public class ChatWindow extends Window implements ActionListener, WindowStateLis
 		performSending();
 	}
 	
-	private void diffieHellmanKeyExchangeSend() {
-		Integer pack;
-		pack = (int) Math.pow(SecurityParams.G, privateKey);
-		pack = pack % SecurityParams.P;
-		final ChatRequest request = new ChatRequest(ChatRequest.CODE_KEY_EXCHANGE, pack);
-		Task.run(new Runnable() {
-			@Override
-			public void run() {
-				Client.getInstance().request(request);
-			}
-		});
-		keySent = true;
-		showWeChat(pack.toString());
+	public void diffieHellmanKeyExchangeSend() {
+		if(!debug) {	
+			KeyPacket packet = new KeyPacket();
+			Integer pack;
+			pack = (int) Math.pow(SecurityParams.G, privateKey);
+			pack = pack % SecurityParams.P;
+			packet.setContent(pack);
+			packet.setWhoId(yourFriend.getAccountId());
+			final ChatRequest request = new ChatRequest(ChatRequest.CODE_KEY_EXCHANGE, packet);
+			Task.run(new Runnable() {
+				@Override
+				public void run() {
+					Client.getInstance().request(request);
+				}
+			});
+			keySent = true;
+		} else {
+			sessionKey = 7;
+		}
+		
 	}
 
 	private void performSending() {
@@ -220,7 +228,8 @@ public class ChatWindow extends Window implements ActionListener, WindowStateLis
 				}
 			});
 		} else if(receivedObject.getRequestCode() == ChatRequest.CODE_KEY_EXCHANGE) {
-			Integer pack = (Integer) receivedObject.getExtra();
+			KeyPacket packet = (KeyPacket) receivedObject.getExtra();
+			Integer pack = packet.getContent();
 			pack = (int) Math.pow(pack, privateKey);
 			sessionKey = pack % SecurityParams.P;
 			if(keySent == false) {

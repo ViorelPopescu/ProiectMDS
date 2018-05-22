@@ -17,12 +17,11 @@ public class CryptoUtils {
     public static final String encryptCaesar(String s, int key) {
 		return CryptoFactory.caesarsCipher(s, key);
     }
-    
+	
     public static final int generateRandomKey() {
     	Random rand = new Random();
     	return rand.nextInt(26);
     }
-	
     // Pentru RSA----------------------------------------------------------------------------------
     /**
      * Decriptare cu algoritmul RSA
