@@ -2,6 +2,7 @@ package crypto;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Random;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -15,6 +16,11 @@ public class CryptoUtils {
 	
     public static final String encryptCaesar(String s, int key) {
 		return CryptoFactory.caesarsCipher(s, key);
+    }
+    
+    public static final int generateRandomKey() {
+    	Random rand = new Random();
+    	return rand.nextInt(26);
     }
 	
     // Pentru RSA----------------------------------------------------------------------------------

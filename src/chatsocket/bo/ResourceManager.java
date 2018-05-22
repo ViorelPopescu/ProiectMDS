@@ -7,7 +7,6 @@ import java.util.HashMap;
 
 import javax.imageio.ImageIO;
 
-//import in.sontx.tut.chatsocket.bo.ResourceManager;
 
 public final class ResourceManager {
 	private static ResourceManager instance;

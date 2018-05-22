@@ -30,6 +30,7 @@ import chatsocket.utils.Task;
 import client.Client;
 import client.Client.OnDataReceivedListener;
 import crypto.CryptoUtils;
+import crypto.SecurityParams;
 
 import javax.swing.border.EmptyBorder;
 import javax.swing.ImageIcon;
@@ -46,6 +47,9 @@ public class ChatWindow extends Window implements ActionListener, WindowStateLis
 	private JTextField inputField;
 	private JTextPane dispField;
 	private final AccountInfo yourFriend;
+	private int privateKey;
+	private int sessionKey;
+	private boolean keySent;
 
 	@Override
 	protected void initializeComponents() {
@@ -80,10 +84,15 @@ public class ChatWindow extends Window implements ActionListener, WindowStateLis
 	}
 
 	public ChatWindow(AccountInfo yourFriend) {
+		privateKey = CryptoUtils.generateRandomKey();
+		keySent = false;
+		
 		setTitle(yourFriend.getDisplayName());
 
 		this.yourFriend = yourFriend;
 
+		diffieHellmanKeyExchangeSend();
+		
 		Client.getInstance().addOnDataReceivedListener(this);
 	}
 
@@ -107,12 +116,27 @@ public class ChatWindow extends Window implements ActionListener, WindowStateLis
 	public void actionPerformed(ActionEvent e) {
 		performSending();
 	}
+	
+	private void diffieHellmanKeyExchangeSend() {
+		Integer pack;
+		pack = (int) Math.pow(SecurityParams.G, privateKey);
+		pack = pack % SecurityParams.P;
+		final ChatRequest request = new ChatRequest(ChatRequest.CODE_KEY_EXCHANGE, pack);
+		Task.run(new Runnable() {
+			@Override
+			public void run() {
+				Client.getInstance().request(request);
+			}
+		});
+		keySent = true;
+		showWeChat(pack.toString());
+	}
 
 	private void performSending() {
 		String content = inputField.getText();
 		String encryptedContent = new String();
 		if (content != null && (content = content.trim()).length() > 0) {
-			encryptedContent = CryptoUtils.encryptCaesar(content, 5);
+			encryptedContent = CryptoUtils.encryptCaesar(content, sessionKey);
 			ChatMessage chatMessage = new ChatMessage();
 			chatMessage.setContent(encryptedContent);
 			chatMessage.setWhoId(yourFriend.getAccountId());
@@ -171,7 +195,7 @@ public class ChatWindow extends Window implements ActionListener, WindowStateLis
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override
 			public void run() {
-				showFriendChat(CryptoUtils.decryptCaesar(chatMessage.getContent(), 5));
+				showFriendChat(CryptoUtils.decryptCaesar(chatMessage.getContent(), sessionKey));
 			}
 		});
 	}
@@ -195,6 +219,13 @@ public class ChatWindow extends Window implements ActionListener, WindowStateLis
 					setTitle(accountInfo.getDisplayName());
 				}
 			});
+		} else if(receivedObject.getRequestCode() == ChatRequest.CODE_KEY_EXCHANGE) {
+			Integer pack = (Integer) receivedObject.getExtra();
+			pack = (int) Math.pow(pack, privateKey);
+			sessionKey = pack % SecurityParams.P;
+			if(keySent == false) {
+				diffieHellmanKeyExchangeSend();
+			}
 		}
 		return true;
 	}

@@ -32,6 +32,7 @@ import chatsocket.view.TwoLineJLabel;
 import client.Application;
 import client.Client;
 import client.Client.OnDataReceivedListener;
+import crypto.CryptoUtils;
 
 public class FriendsWindow extends Window implements OnDataReceivedListener, ActionListener {
 	private static final long serialVersionUID = -849445801429980623L;
@@ -39,7 +40,7 @@ public class FriendsWindow extends Window implements OnDataReceivedListener, Act
 	private ClickableJLabel myInfoField;
 	private AccountInfo myAccountInfo = null;
 	private Object lock = new Object();
-
+	
 	@Override
 	protected void initializeComponents() {
 		setTitle("Friends");
@@ -76,7 +77,7 @@ public class FriendsWindow extends Window implements OnDataReceivedListener, Act
 		((ProfileWindow) Application.showWindow(ProfileWindow.class)).setProfileInfo(myAccountInfo,
 				Client.getInstance().getMyUsername());
 	}
-
+	
 	private void displayChatBox(int whoIndex) {
 		if (whoIndex >= 0) {
 			AccountInfo friend = friendList.getModel().getElementAt(whoIndex).getAccountInfo();

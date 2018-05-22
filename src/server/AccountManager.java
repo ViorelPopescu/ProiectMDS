@@ -1,223 +1,148 @@
 package server;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.StringWriter;
-import java.nio.charset.Charset;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONTokener;
 
 import chatsocket.bean.AccountInfo;
 import chatsocket.utils.Security;
-import chatsocket.utils.StreamUtilities;
+import oracle.database.JDBCConnection;
 
 public final class AccountManager {
-	private static final String USERDAT_FILENAME = "userdat.io";
 	private static AccountManager instance = null;
+	private static final String INIT_STATUS = "Hi everyone!";
+
+	private AccountManager() {
+
+	}
+
+	public static void createInstance() {
+		instance = new AccountManager();
+	}
 
 	public static AccountManager getInstance() {
 		return instance;
 	}
 
-	public static void createInstance(String userdatDir) {
-		if (!userdatDir.endsWith("/"))
-			userdatDir = userdatDir + "/";
-		instance = new AccountManager(userdatDir + USERDAT_FILENAME);
-	}
-
-	private static final String INIT_STATUS = "Hi everyone!";
-	private final String userdatPath;
-
-	AccountManager(String userdatPath) {
-		this.userdatPath = userdatPath;
-		initialize();
-	}
-
-	private void initialize() {
-		if (!new File(userdatPath).exists()) {
-			try {
-				JSONArray jsonArray = new JSONArray("[]");
-				updateToFile(jsonArray);
-			} catch (JSONException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	public AccountInfo getAccountInfo(String username, String passhash) {
-		if(username != null && passhash != null)
-		{
-			try {
-			JSONTokener jsonTokener = new JSONTokener(readAllString());
-			JSONArray jsonArray = new JSONArray(jsonTokener);
-			int countOfObject = jsonArray.length();
-			for (int i = 0; i < countOfObject; i++) {
-				JSONObject jsonObject = jsonArray.getJSONObject(i);
-				if (jsonObject.getString("username").equals(username)
-						&& jsonObject.getString("passhash").equals(passhash)) {
-					AccountInfo accountInfo = new AccountInfo();
-					accountInfo.setAccountId(jsonObject.getInt("id"));
-					accountInfo.setDisplayName(jsonObject.getString("dispname"));
-					accountInfo.setStatus(jsonObject.getString("status"));
-					accountInfo.setState(AccountInfo.STATE_ONLINE);
-					return accountInfo;
-				}
-			}
-		} 
-		catch (JSONException e) {
+	private synchronized void addAccountToDatabase(HashMap<String, String> account) {
+		try (PreparedStatement ps = JDBCConnection.getInstance().getDatabaseConnection()
+				.prepareStatement("INSERT INTO CONTURIMDS VALUES(?, ?, ?, ?, ?)");) {
+			ps.setInt(1, Integer.parseInt(account.get("USER_ID")));
+			ps.setString(2, account.get("USERNAME"));
+			ps.setString(3, account.get("PASSWORD"));
+			ps.setString(4, account.get("DISPLAY_NAME"));
+			ps.setString(5, account.get("STATUS"));
+			ps.executeUpdate();
+		} catch (SQLException | NumberFormatException e) {
 			e.printStackTrace();
 		}
-		}
-		return null;
 	}
 
-	public List<AccountInfo> getAllAccountInfos() {
-		List<AccountInfo> allFriends = new ArrayList<>();
-		try {
-			JSONTokener jsonTokener = new JSONTokener(readAllString());
-			JSONArray jsonArray = new JSONArray(jsonTokener);
-			int countOfObject = jsonArray.length();
-			for (int i = 0; i < countOfObject; i++) {
-				JSONObject jsonObject = jsonArray.getJSONObject(i);
-				AccountInfo accountInfo = new AccountInfo();
-				accountInfo.setAccountId(jsonObject.getInt("id"));
-				accountInfo.setDisplayName(jsonObject.getString("dispname"));
-				accountInfo.setStatus(jsonObject.getString("status"));
-				accountInfo.setState(AccountInfo.STATE_OFFLINE);
-				allFriends.add(accountInfo);
-			}
-		} catch (JSONException e) {
+	private synchronized void changeAccountInfo(int id, String key, String value) {
+		if (key == null || value == null)
+			return;
+		try (PreparedStatement ps = JDBCConnection.getInstance().getDatabaseConnection()
+				.prepareStatement("UPDATE CONTURIMDS SET " + key + "= ? WHERE USER_ID = ?")) {
+			ps.setString(1, value);
+			ps.setInt(2, id);
+			ps.executeUpdate();
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		return allFriends;
-	}
 
-	private synchronized void updateToFile(JSONArray jsonArray) {
-		OutputStream out = null;
-		StringWriter writer = new StringWriter();
-		File userdatFile = new File(userdatPath);
-		userdatFile.delete();
-		try {
-			jsonArray.write(writer);
-			out = new FileOutputStream(userdatFile);
-			out.write(writer.toString().getBytes(Charset.forName("UTF-8")));
-		} catch (JSONException | IOException e) {
-			e.printStackTrace();
-		} finally {
-			StreamUtilities.tryCloseStream(out);
-			StreamUtilities.tryCloseStream(writer);
-		}
-	}
-
-	private synchronized String readAllString() {
-		File userdatFile = new File(userdatPath);
-		if (!userdatFile.exists())
-			try {
-				userdatFile.createNewFile();
-			} catch (IOException e1) {
-			}
-		BufferedReader reader = null;
-		try {
-			reader = new BufferedReader(new FileReader(userdatFile));
-			char[] buffer = new char[1024 * 32];
-			int length = reader.read(buffer);
-			if (length > 0)
-				return new String(buffer, 0, length);
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			StreamUtilities.tryCloseStream(reader);
-		}
-		return "";
 	}
 
 	private boolean checkExistsAccount(String username) {
-		try {
-			JSONTokener jsonTokener = new JSONTokener(readAllString());
-			JSONArray jsonArray = new JSONArray(jsonTokener);
-			int countOfObject = jsonArray.length();
-			for (int i = 0; i < countOfObject; i++) {
-				JSONObject jsonObject = jsonArray.getJSONObject(i);
-				if (jsonObject.getString("username").equals(username)) {
-					return true;
-				}
+		try (PreparedStatement ps = JDBCConnection.getInstance().getDatabaseConnection()
+				.prepareStatement("SELECT * FROM CONTURIMDS WHERE USERNAME = ?")) {
+			ps.setString(1, username);
+			try (ResultSet rs = ps.executeQuery();) {
+				return rs.next();
 			}
-		} catch (JSONException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 		return false;
 	}
 
 	public void addAccount(String username, String passhash, String dispname) {
-		if(username == null || passhash ==null || dispname == null)
+		if (username == null || passhash == null || dispname == null)
 			return;
-		if (checkExistsAccount(username))
+		if (checkExistsAccount(username) == true)
 			return;
-		try {
-			JSONTokener jsonTokener = new JSONTokener(readAllString());
-			JSONArray jsonArray = new JSONArray(jsonTokener);
-			JSONObject jsonObject = new JSONObject();
+		HashMap<String, String> newAccount = new HashMap<String, String>();
+		newAccount.put("USER_ID", Integer.toString(Security.getRandomInteger()));
+		newAccount.put("USERNAME", username);
+		newAccount.put("PASSWORD", passhash);
+		newAccount.put("DISPLAY_NAME", dispname);
+		newAccount.put("STATUS", INIT_STATUS);
 
-			jsonObject.put("id", Security.getRandomInteger());
-			jsonObject.put("username", username);
-			jsonObject.put("passhash", passhash);
-			jsonObject.put("dispname", dispname);
-			jsonObject.put("status", INIT_STATUS);
-
-			jsonArray.put(jsonObject);
-
-			updateToFile(jsonArray);
-		} catch (JSONException e) {
-			e.printStackTrace();
-		}
-	}
-
-	private void changeAccountInfo(int id, String key, String value) {
-		if(key == null || value == null)
-			return;
-		try {
-			JSONTokener jsonTokener = new JSONTokener(readAllString());
-			JSONArray jsonArray = new JSONArray(jsonTokener);
-
-			int countOfAccount = jsonArray.length();
-			for (int i = 0; i < countOfAccount; i++) {
-				JSONObject jsonObject = jsonArray.getJSONObject(i);
-				if (jsonObject.getInt("id") == id) {
-					jsonObject.put(key, value);
-					break;
-				}
-			}
-
-			updateToFile(jsonArray);
-		} catch (JSONException e) {
-			e.printStackTrace();
-		}
+		addAccountToDatabase(newAccount);
 	}
 
 	public void changeDisplayName(int id, String newDisplayName) {
-		if(newDisplayName == null)
+		if (newDisplayName == null)
 			return;
-		changeAccountInfo(id, "dispname", newDisplayName);
+		changeAccountInfo(id, "DISPLAY_NAME", newDisplayName);
 	}
 
 	public void changeStatus(int id, String status) {
-		if(status == null)
+		if (status == null)
 			return;
-		changeAccountInfo(id, "status", status);
+		changeAccountInfo(id, "STATUS", status);
 	}
 
 	public void changePasswordHash(int id, String passhash) {
-		if(passhash == null)
+		if (passhash == null)
 			return;
-		changeAccountInfo(id, "passhash", passhash);
+		changeAccountInfo(id, "PASSWORD", passhash);
+	}
+
+	public AccountInfo getAccountInfo(String username, String passhash) {
+		if (username == null || passhash == null)
+			return null;
+
+		try (PreparedStatement ps = JDBCConnection.getInstance().getDatabaseConnection()
+				.prepareStatement("SELECT * FROM CONTURIMDS WHERE USERNAME = ? AND PASSWORD = ?")) {
+			ps.setString(1, username);
+			ps.setString(2, passhash);
+			try (ResultSet rs = ps.executeQuery();) {
+				if (rs.next() == true) {
+					AccountInfo accountInfo = new AccountInfo();
+					accountInfo.setAccountId(rs.getInt("USER_ID"));
+					accountInfo.setDisplayName(rs.getString("DISPLAY_NAME"));
+					accountInfo.setStatus(rs.getString("STATUS"));
+					accountInfo.setState(AccountInfo.STATE_ONLINE);
+					return accountInfo;
+				} else
+					return null;
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public List<AccountInfo> getAllAccountInfos() {
+		List<AccountInfo> allFriends = new ArrayList<>();
+		try (PreparedStatement ps = JDBCConnection.getInstance().getDatabaseConnection()
+				.prepareStatement("SELECT * FROM CONTURIMDS")) {
+			try (ResultSet rs = ps.executeQuery();) {
+				while (rs.next() == true) {
+					AccountInfo accountInfo = new AccountInfo();
+					accountInfo.setAccountId(rs.getInt("USER_ID"));
+					accountInfo.setDisplayName(rs.getString("DISPLAY_NAME"));
+					accountInfo.setStatus(rs.getString("STATUS"));
+					accountInfo.setState(AccountInfo.STATE_OFFLINE);
+					allFriends.add(accountInfo);
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return allFriends;
 	}
 }

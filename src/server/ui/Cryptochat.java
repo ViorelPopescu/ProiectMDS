@@ -174,7 +174,8 @@ public class Cryptochat extends JFrame implements ActionListener {
 
 	private void setWorkingDir(String dir) {
 		dir = dir.replace('\\', '/');
-		AccountManager.createInstance(dir);
+		//AccountManager.createInstance(dir);
+		AccountManager.createInstance();
 		if (Log.getLogable() instanceof ServerLogable)
 			StreamUtilities.tryCloseStream(((ServerLogable) Log.getLogable()));
 		Log.setLogable(new ServerLogable(logPane, dir));

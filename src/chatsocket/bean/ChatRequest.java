@@ -13,7 +13,8 @@ public class ChatRequest implements Serializable {
 	public static final int CODE_CHANGE_PASSWORD = 6;
 	public static final int CODE_CHANGE_STATUS = 7;
 	public static final int CODE_FRIEND_STATE = 8;
-
+	public static final int CODE_KEY_EXCHANGE = 9;
+	
 	private int code;
 	private Object extra;
 
