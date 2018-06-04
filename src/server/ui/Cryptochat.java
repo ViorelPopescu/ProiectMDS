@@ -51,9 +51,13 @@ public class Cryptochat extends JFrame implements ActionListener {
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		getContentPane().setLayout(null);
 
+		JLabel label = new JLabel("");
+		label.setBounds(7, 11, 191, 294);
+		label.setIcon(new ImageIcon(ResourceManager.getInstance().getImageByName("banner.png")));
+		getContentPane().add(label);
+
 		JPanel panel = new JPanel();
-		panel.setSize(313, 128);
-		panel.setBounds(100, 11, 313, 128);
+		panel.setBounds(200, 11, 313, 128);
 		getContentPane().add(panel);
 		panel.setLayout(null);
 
@@ -101,7 +105,7 @@ public class Cryptochat extends JFrame implements ActionListener {
 		panel.add(btnShowIPs);
 
 		JPanel panel_1 = new JPanel();
-		panel_1.setBounds(108, 149, 297, 153);
+		panel_1.setBounds(208, 149, 297, 153);
 		getContentPane().add(panel_1);
 		panel_1.setLayout(new BorderLayout(0, 0));
 
